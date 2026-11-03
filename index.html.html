@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حلول - مساعد الواجبات الذكي</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- KaTeX for Math Equations Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 9999px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        /* Markdown rendering styles */
+        .prose h1, .prose h2, .prose h3 {
+            font-weight: 700;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: inherit;
+        }
+        .prose h1 { font-size: 1.5rem; border-bottom: 2px solid #22c55e; padding-bottom: 0.2rem; }
+        .prose h2 { font-size: 1.25rem; color: #16a34a; }
+        .dark .prose h2 { color: #4ade80; }
+        .prose p { margin-bottom: 0.8em; line-height: 1.8; }
+        .prose ul, .prose ol { margin-right: 1.5em; margin-bottom: 1em; list-style-type: disc; }
+        .prose ol { list-style-type: decimal; }
+        .prose li { margin-bottom: 0.3em; }
+        .prose code { background: rgba(0,0,0,0.06); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; }
+        .dark .prose code { background: rgba(255,255,255,0.1); }
+        .prose pre { background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1em; }
+        .prose blockquote { border-right: 4px solid #22c55e; padding-right: 1rem; margin-right: 0; opacity: 0.9; font-style: italic; }
+        /* Font Scaling Utilities */
+        .text-size-sm .prose { font-size: 0.875rem; }
+        .text-size-base .prose { font-size: 1rem; }
+        .text-size-lg .prose { font-size: 1.125rem; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-5 left-5 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+    <!-- Floating Selection Solve Button -->
+    <button id="floatingSolveBtn" class="fixed hidden z-50 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-700 hover:to-emerald-600 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-2xl items-center gap-1.5 transition-all transform scale-95 hover:scale-105 active:scale-90 animate-bounce">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+        <span>حل السؤال المحدد</span>
+    </button>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid font-bold fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-600 to-emerald-500 bg-clip-text text-transparent">حـلـول الذكي</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">حل واستعراض جميع الواجبات الدراسية بلا حدود</p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <button id="toggleHistoryBtn" class="px-3 py-2 text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2">
+                    <i class="fa-solid fa-history text-brand-600 dark:text-brand-500"></i>
+                    <span class="hidden md:inline">سجل الإجابات</span>
+                    <span id="historyBadge" class="bg-brand-500 text-white text-xs px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
+                <button id="themeToggleBtn" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-600 dark:text-slate-300">
+                    <i class="fa-solid fa-moon dark:hidden text-lg"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400 text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Input Form & Controls (5 Cols on LG) -->
+        <section class="lg:col-span-5 flex flex-col gap-5">
+            
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-brand-600 dark:text-brand-500"></i>
+                        إدخال أسئلة الواجب
+                    </h2>
+                    <span class="text-xs bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-full font-semibold">
+                        بدون حد أقصى ✨
+                    </span>
+                </div>
+
+                <!-- Subject & Mode Selectors -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">المادة الدراسية</label>
+                        <select id="subjectSelect" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="عام شامل">📚 عام / متعدد التخصصات</option>
+                            <option value="الرياضيات">📐 الرياضيات والحساب</option>
+                            <option value="الفيزياء والعلوم">🧪 العلوم والفيزياء</option>
+                            <option value="الكيمياء">⚗️ الكيمياء</option>
+                            <option value="الأحياء">🧬 الأحياء والعلوم الحياتية</option>
+                            <option value="اللغات (عربي / انجليزي / غيرها)">📝 اللغة العربية واللغات</option>
+                            <option value="الدراسات الاجتماعية / التاريخ والجغرافيا">🌍 التاريخ والجغرافيا والدراسات</option>
+                            <option value="الحاسب والبرمجة">💻 الحاسب الآلي والبرمجة</option>
+                            <option value="الفلسفة والمنطق">💡 الفلسفة وعلم النفس</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">طريقة الإجابة</label>
+                        <select id="modeSelect" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="شرح تفصيلي خطوة بخطوة">📖 شرح تفصيلي + الحل النهائي</option>
+                            <option value="إجابة سريعة ومباشرة">⚡ إجابات مختصرة وسريعة</option>
+                            <option value="حل مع أمثلة مشابهة وتوضيح">🎓 شرح كامل + مثال توضيحي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Textarea -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="homeworkInput" class="block text-xs font-semibold text-slate-500 dark:text-slate-400">انسخ الأسئلة هنا واضغط على "حل الواجب":</label>
+                        <button id="clearInputBtn" class="text-xs text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1 transition">
+                            <i class="fa-solid fa-trash-can"></i> مسح
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <textarea id="homeworkInput" rows="10" placeholder="مثال:
+1. أحسب القوة الناتجة عن كتلة 50 كجم تتسارع بمقدار 2 م/ث²؟
+2. ما هي أسباب الثورة الصناعية في أوروبا؟
+3. اعرب الجملة التالية: 'العلمُ نورٌ يضيءُ الطريق'." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition resize-none leading-relaxed"></textarea>
+                    </div>
+                    <!-- Live Word & Char Counter -->
+                    <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-400 px-1">
+                        <span id="charCount">0 حرف</span>
+                        <span id="wordCount">0 كلمة</span>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="flex flex-wrap gap-2">
+                    <button id="speakInputBtn" type="button" class="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-volume-high text-brand-500"></i> استماع للسؤال
+                    </button>
+                    <button id="pasteClipboardBtn" type="button" class="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-clipboard"></i> لصق من الحافظة
+                    </button>
+                    <button id="sampleMathBtn" type="button" class="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-700 dark:text-slate-300 transition">
+                        ➕ تجربة مثال رياضيات
+                    </button>
+                    <button id="sampleArabicBtn" type="button" class="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-700 dark:text-slate-300 transition">
+                        📖 تجربة مثال إعراب
+                    </button>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="solveBtn" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-700 hover:to-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition duration-200 flex items-center justify-center gap-2 text-base">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>حل الواجب الآن</span>
+                </button>
+            </div>
+
+            <!-- Features Banner -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-sm relative overflow-hidden hidden sm:block">
+                <div class="relative z-10">
+                    <h3 class="font-bold text-sm text-emerald-400 mb-1">💡 نصيحة لتحصيل أفضل الإجابات:</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">يمكنك نسخ ورقة الأسئلة كاملة بنفس التنسيق. يقوم النظام تلقائياً بتقسيم الأسئلة وإعطاء كل سؤال حقه من الشرح والتفصيل.</p>
+                </div>
+                <div class="absolute -bottom-6 -left-6 w-24 h-24 bg-brand-500/10 rounded-full blur-xl"></div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Results & Solution View (7 Cols on LG) -->
+        <section class="lg:col-span-7 flex flex-col gap-5">
+            
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 min-h-[500px] flex flex-col">
+                
+                <!-- Output Header / Toolbar -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-brand-500 animate-pulse"></span>
+                        <h2 class="font-bold text-lg">النتيجة والحل المفصل</h2>
+                    </div>
+
+                    <!-- Actions Toolbar -->
+                    <div id="solutionActions" class="flex items-center gap-1 opacity-50 pointer-events-none transition flex-wrap">
+                        <!-- Font Sizing controls -->
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 text-xs border border-slate-200 dark:border-slate-700">
+                            <button id="fontSizeDownBtn" title="تصغير الخط" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">A-</button>
+                            <button id="fontSizeUpBtn" title="تكبير الخط" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">A+</button>
+                        </div>
+                        <button id="downloadTextBtn" title="تحميل الإجابة كملف نصي" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition text-sm flex items-center gap-1">
+                            <i class="fa-solid fa-file-arrow-down text-emerald-500"></i>
+                            <span class="text-xs hidden sm:inline">تحميل ملف</span>
+                        </button>
+                        <button id="speakSolutionBtn" title="قراءة الحل صوتياً" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition text-sm flex items-center gap-1">
+                            <i class="fa-solid fa-volume-high text-brand-500"></i>
+                            <span class="text-xs hidden sm:inline">قراءة الحل</span>
+                        </button>
+                        <button id="copySolutionBtn" title="نسخ الحل" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition text-sm flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i>
+                            <span class="text-xs hidden sm:inline">نسخ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Solution Content Area -->
+                <div id="solutionDisplayContainer" class="flex-1 flex flex-col text-size-base">
+
+                    <!-- Initial Placeholder State -->
+                    <div id="placeholderState" class="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400 dark:text-slate-500">
+                        <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-3xl text-brand-500 mb-4 animate-bounce">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-700 dark:text-slate-300 mb-1">المنصة جاهزة لحل واجباتك!</h3>
+                        <p class="text-xs max-w-sm leading-relaxed">قم بنسخ أي عدد من الأسئلة أو التمرينات وضغط زر "حل الواجب الآن" لبدء التحليل الفوري.</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loadingState" class="hidden flex-1 flex flex-col items-center justify-center text-center p-8">
+                        <div class="relative w-16 h-16 mb-4">
+                            <div class="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-slate-800"></div>
+                            <div class="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-700 dark:text-slate-200 mb-1">جاري تحليل الأجوبة بالتفصيل...</h3>
+                        <p class="text-xs text-slate-400 animate-pulse">يقوم المعلم الذكي بصياغة الخطوات الدقيقة والإجابات النهائية</p>
+                    </div>
+
+                    <!-- Rendered Solution Printable Wrapper -->
+                    <div id="printableArea" class="hidden flex-1 flex flex-col">
+                        <div id="solutionMeta" class="mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-xs flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <span class="font-bold text-brand-600 dark:text-brand-400" id="metaSubject">المادة: عام</span>
+                                <span class="mx-2 text-slate-300">|</span>
+                                <span id="metaMode" class="text-slate-500 dark:text-slate-400">شرح تفصيلي</span>
+                            </div>
+                            <div class="text-slate-400 text-[11px]" id="metaTime">--:--</div>
+                        </div>
+
+                        <!-- Markdown Output Display -->
+                        <div id="solutionText" class="prose dark:prose-invert max-w-none text-sm leading-relaxed text-slate-800 dark:text-slate-200"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- History Drawer / Modal -->
+    <div id="historyDrawer" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex justify-end opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="historyPanel" class="w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl p-5 flex flex-col transition-transform duration-300 translate-x-full">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-600 dark:text-brand-500"></i>
+                    <h3 class="font-bold text-base">سجل الواجبات السابقة</h3>
+                </div>
+                <button id="closeHistoryBtn" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between py-2">
+                <span id="historyCountText" class="text-xs text-slate-500">0 واجبات محفوظة</span>
+                <button id="clearHistoryBtn" class="text-xs text-rose-500 hover:underline">مسح الكل</button>
+            </div>
+
+            <div id="historyList" class="flex-1 overflow-y-auto space-y-3 py-2 pr-1">
+                <!-- History Items Dynamic -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // DOM Elements
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const homeworkInput = document.getElementById('homeworkInput');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const subjectSelect = document.getElementById('subjectSelect');
+        const modeSelect = document.getElementById('modeSelect');
+        const solveBtn = document.getElementById('solveBtn');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const pasteClipboardBtn = document.getElementById('pasteClipboardBtn');
+        const sampleMathBtn = document.getElementById('sampleMathBtn');
+        const sampleArabicBtn = document.getElementById('sampleArabicBtn');
+        const floatingSolveBtn = document.getElementById('floatingSolveBtn');
+
+        const speakInputBtn = document.getElementById('speakInputBtn');
+        const speakSolutionBtn = document.getElementById('speakSolutionBtn');
+        const downloadTextBtn = document.getElementById('downloadTextBtn');
+        const fontSizeUpBtn = document.getElementById('fontSizeUpBtn');
+        const fontSizeDownBtn = document.getElementById('fontSizeDownBtn');
+        const solutionDisplayContainer = document.getElementById('solutionDisplayContainer');
+
+        const placeholderState = document.getElementById('placeholderState');
+        const loadingState = document.getElementById('loadingState');
+        const printableArea = document.getElementById('printableArea');
+        const solutionText = document.getElementById('solutionText');
+        const solutionActions = document.getElementById('solutionActions');
+        const copySolutionBtn = document.getElementById('copySolutionBtn');
+
+        const metaSubject = document.getElementById('metaSubject');
+        const metaMode = document.getElementById('metaMode');
+        const metaTime = document.getElementById('metaTime');
+
+        const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
+        const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+        const historyDrawer = document.getElementById('historyDrawer');
+        const historyPanel = document.getElementById('historyPanel');
+        const historyList = document.getElementById('historyList');
+        const historyBadge = document.getElementById('historyBadge');
+        const historyCountText = document.getElementById('historyCountText');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // State Variables
+        let currentSolutionTextRaw = "";
+        let historyData = JSON.parse(localStorage.getItem('homework_history') || '[]');
+        let fontSizes = ['text-size-sm', 'text-size-base', 'text-size-lg'];
+        let currentFontSizeIdx = 1;
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            let iconClass = 'fa-circle-info text-blue-500';
+            let bgClass = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+
+            if (type === 'success') {
+                iconClass = 'fa-circle-check text-emerald-500';
+            } else if (type === 'error') {
+                iconClass = 'fa-circle-exclamation text-rose-500';
+            }
+
+            toast.className = `flex items-center gap-3 p-3.5 rounded-xl shadow-xl border text-sm text-slate-800 dark:text-slate-100 transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-lg"></i>
+                <span class="font-medium">${message}</span>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3500);
+        }
+
+        // Live Counter & Auto Save Input Draft
+        homeworkInput.addEventListener('input', () => {
+            const val = homeworkInput.value;
+            charCount.textContent = `${val.length} حرف`;
+            const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+            wordCount.textContent = `${words} كلمة`;
+            localStorage.setItem('draft_homework_input', val);
+        });
+
+        // Restore Draft on load
+        const savedDraft = localStorage.getItem('draft_homework_input');
+        if (savedDraft) {
+            homeworkInput.value = savedDraft;
+            homeworkInput.dispatchEvent(new Event('input'));
+        }
+
+        // Samples & Clipboard Handlers
+        clearInputBtn.addEventListener('click', () => {
+            homeworkInput.value = '';
+            homeworkInput.dispatchEvent(new Event('input'));
+            localStorage.removeItem('draft_homework_input');
+            showToast('تم مسح خانة الواجب', 'info');
+        });
+
+        pasteClipboardBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                homeworkInput.value = text;
+                homeworkInput.dispatchEvent(new Event('input'));
+                showToast('تم اللصق من الحافظة بنجاح', 'success');
+            } catch (err) {
+                showToast('يرجى منح الإذن للصق النص تلقائياً', 'error');
+            }
+        });
+
+        sampleMathBtn.addEventListener('click', () => {
+            homeworkInput.value = "أوجد قيمة x في المعادلة التالية مع التوضيح: 2x + 5 = 15 ، ثم أحسب مساحة دائرة نصف قطرها 7 سم؟";
+            subjectSelect.value = "الرياضيات";
+            homeworkInput.dispatchEvent(new Event('input'));
+        });
+
+        sampleArabicBtn.addEventListener('click', () => {
+            homeworkInput.value = "أعرب الجملة التالية إعراباً كاملاً: 'يَسْعَى المَجْدُ لِلنَّجَاحِ بِخُطىً ثَابِتَةٍ'.";
+            subjectSelect.value = "اللغات (عربي / انجليزي / غيرها)";
+            homeworkInput.dispatchEvent(new Event('input'));
+        });
+
+        // Font Sizing Controls
+        fontSizeUpBtn.addEventListener('click', () => {
+            if (currentFontSizeIdx < fontSizes.length - 1) {
+                solutionDisplayContainer.classList.remove(fontSizes[currentFontSizeIdx]);
+                currentFontSizeIdx++;
+                solutionDisplayContainer.classList.add(fontSizes[currentFontSizeIdx]);
+            }
+        });
+
+        fontSizeDownBtn.addEventListener('click', () => {
+            if (currentFontSizeIdx > 0) {
+                solutionDisplayContainer.classList.remove(fontSizes[currentFontSizeIdx]);
+                currentFontSizeIdx--;
+                solutionDisplayContainer.classList.add(fontSizes[currentFontSizeIdx]);
+            }
+        });
+
+        // Download Text File
+        downloadTextBtn.addEventListener('click', () => {
+            if (!currentSolutionTextRaw) return;
+            const blob = new Blob([currentSolutionTextRaw], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `إجابة_الواجب_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('تم تحميل ملف الإجابة بنجاح', 'success');
+        });
+
+        // Speech Synthesis / Text-to-Speech
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast('متصفحك لا يدعم القراءة الصوتية', 'error');
+                return;
+            }
+
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                showToast('تم إيقاف القراءة الصوتية', 'info');
+                return;
+            }
+
+            const cleanText = text.replace(/[#*`_~>-]/g, ' ').replace(/\s+/g, ' ');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'ar-SA';
+            utterance.rate = 0.95;
+
+            window.speechSynthesis.speak(utterance);
+            showToast('جاري قراءة النص صوتياً...', 'success');
+        }
+
+        speakInputBtn.addEventListener('click', () => {
+            const text = homeworkInput.value.trim();
+            if (!text) {
+                showToast('لا يوجد نص في الخانة لقراءته', 'error');
+                return;
+            }
+            speakText(text);
+        });
+
+        speakSolutionBtn.addEventListener('click', () => {
+            if (!currentSolutionTextRaw) return;
+            speakText(currentSolutionTextRaw);
+        });
+
+        // Initialize Theme Mode
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Floating Button Logic for Text Selection
+        let selectedTextToSolve = "";
+
+        document.addEventListener('mouseup', handleTextSelection);
+        document.addEventListener('keyup', handleTextSelection);
+
+        function handleTextSelection(e) {
+            if (e.target.closest('#floatingSolveBtn')) return;
+
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+
+            if (text.length > 2) {
+                selectedTextToSolve = text;
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+
+                floatingSolveBtn.style.top = `${Math.max(10, window.scrollY + rect.top - 45)}px`;
+                floatingSolveBtn.style.left = `${Math.min(window.innerWidth - 150, Math.max(10, rect.left + (rect.width / 2) - 60))}px`;
+                
+                floatingSolveBtn.classList.remove('hidden');
+                floatingSolveBtn.classList.add('flex');
+            } else {
+                floatingSolveBtn.classList.add('hidden');
+                floatingSolveBtn.classList.remove('flex');
+            }
+        }
+
+        floatingSolveBtn.addEventListener('click', () => {
+            if (selectedTextToSolve) {
+                homeworkInput.value = selectedTextToSolve;
+                homeworkInput.dispatchEvent(new Event('input'));
+                floatingSolveBtn.classList.add('hidden');
+                floatingSolveBtn.classList.remove('flex');
+                
+                homeworkInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                homeworkInput.focus();
+
+                showToast('تم التقاط السؤال المحدد بنجاح، جاري الحل...', 'success');
+                
+                setTimeout(() => {
+                    solveBtn.click();
+                }, 300);
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            if (!floatingSolveBtn.classList.contains('hidden')) {
+                floatingSolveBtn.classList.add('hidden');
+                floatingSolveBtn.classList.remove('flex');
+            }
+        });
+
+        // Main Solve Function using Gemini API
+        solveBtn.addEventListener('click', async () => {
+            const query = homeworkInput.value.trim();
+            if (!query) {
+                showToast('يرجى إدخال أسئلة الواجب أولاً', 'error');
+                homeworkInput.focus();
+                return;
+            }
+
+            const subject = subjectSelect.value;
+            const mode = modeSelect.value;
+
+            placeholderState.classList.add('hidden');
+            printableArea.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            solutionActions.classList.add('opacity-50', 'pointer-events-none');
+            solveBtn.disabled = true;
+            solveBtn.classList.add('opacity-75');
+
+            const systemPrompt = `أنت معلم واستاذ خبير ومساعد متفوق في حل الواجبات المدرسية والأكاديمية لجميع المراحل.
+مهمتك: حل أسئلة الواجب المقدمة بأسلوب تعليمي واضح، مشجع، ودقيق باللغة العربية.
+
+التزم بالهيكل التالي لكل سؤال أو للواجب ككل بشكل منسق ومقروء باستخدام Markdown:
+
+# 📌 إجابة الواجب المدرسي
+
+## 1. 🎯 الإجابة النهائية المباشرة
+(قدم الأجوبة المباشرة أو ناتج كل سؤال هنا بشكل سريع ومختصر)
+
+## 2. 📝 الخطوات والتفاصيل الشاملة
+(لكل سؤال، اذكر رقم السؤال ثم اشرح الخطوات، القانون المستخدم، أو التفاصيل والإعراب بتسلسل واضح ومبسط)
+
+## 3. 💡 ملاحظات ونصائح هامة
+(أضف ملخص أو ملاحظات تفيد الطالب لترسيخ الفهم)
+
+طريقة الحل المطلوبة: ${mode}
+المادة الدراسية: ${subject}`;
+
+            try {
+                const responseText = await fetchGeminiSolution(systemPrompt, query);
+
+                currentSolutionTextRaw = responseText;
+                solutionText.innerHTML = marked.parse(responseText);
+
+                // Render KaTeX Math Equations only if math characters exist to prevent freeze
+                if (window.renderMathInElement && (responseText.includes('$') || responseText.includes('\\'))) {
+                    renderMathInElement(solutionText, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false}
+                        ],
+                        throwOnError: false
+                    });
+                }
+
+                metaSubject.textContent = `المادة: ${subject}`;
+                metaMode.textContent = mode;
+                metaTime.textContent = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+                loadingState.classList.add('hidden');
+                printableArea.classList.remove('hidden');
+                solutionActions.classList.remove('opacity-50', 'pointer-events-none');
+
+                saveToHistory({
+                    id: Date.now(),
+                    query: query,
+                    solution: responseText,
+                    subject: subject,
+                    mode: mode,
+                    date: new Date().toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                });
+
+                showToast('تم حل الواجب بنجاح!', 'success');
+
+            } catch (err) {
+                console.error("Error solving homework:", err);
+                loadingState.classList.add('hidden');
+                placeholderState.classList.remove('hidden');
+                showToast('حدث خطأ أثناء معالجة الأسئلة. يرجى التأكد من مفتاح الـ API والاتصال بالإنترنت.', 'error');
+            } finally {
+                solveBtn.disabled = false;
+                solveBtn.classList.remove('opacity-75');
+            }
+        });
+
+        // Gemini API Fetch Function with speed optimization
+        async function fetchGeminiSolution(systemInstruction, userQuery) {
+            const apiKey = "AQ.Ab8RN6KFqcclOc7u86a5Ts0atAuZW3fKMq_26vjJ61ApjfJRZQ";
+            // Updated to the standard fast model
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [
+                    {
+                        parts: [
+                            { text: userQuery }
+                        ]
+                    }
+                ],
+                systemInstruction: {
+                    parts: [
+                        { text: systemInstruction }
+                    ]
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!resultText) {
+                throw new Error("لم يتم استقبال أي إجابة من النموذج");
+            }
+
+            return resultText;
+        }
+
+        // Action Button: Copy
+        copySolutionBtn.addEventListener('click', () => {
+            if (!currentSolutionTextRaw) return;
+            
+            const textArea = document.createElement("textarea");
+            textArea.value = currentSolutionTextRaw;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('تم نسخ الإجابة الكاملة بنجاح!', 'success');
+            } catch (err) {
+                showToast('فشل في عملية النسخ', 'error');
+            }
+            document.body.removeChild(textArea);
+        });
+
+        // History Management
+        function renderHistory() {
+            historyList.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-folder-open text-2xl mb-2"></i>
+                        <p class="text-xs">لا يوجد واجبات محفوظة بعد</p>
+                    </div>
+                `;
+                historyBadge.classList.add('hidden');
+            } else {
+                historyBadge.textContent = historyData.length;
+                historyBadge.classList.remove('hidden');
+
+                historyData.forEach((item) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:border-brand-500 transition cursor-pointer flex flex-col gap-1.5 group";
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-brand-600 dark:text-brand-400">${item.subject || 'عام'}</span>
+                            <span class="text-[10px] text-slate-400">${item.date}</span>
+                        </div>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2">${item.query}</p>
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
+                            <span class="text-[10px] text-slate-400">${item.mode || ''}</span>
+                            <button data-id="${item.id}" class="delete-history-btn text-rose-500 hover:text-rose-600 text-xs p-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.delete-history-btn')) return;
+                        loadFromHistory(item);
+                        closeHistoryDrawer();
+                    });
+
+                    historyList.appendChild(card);
+                });
+
+                document.querySelectorAll('.delete-history-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = parseInt(btn.getAttribute('data-id'));
+                        historyData = historyData.filter(h => h.id !== id);
+                        localStorage.setItem('homework_history', JSON.stringify(historyData));
+                        renderHistory();
+                        showToast('تم حذف الواجب من السجل', 'info');
+                    });
+                });
+            }
+
+            historyCountText.textContent = `${historyData.length} واجبات محفوظة`;
+        }
+
+        function saveToHistory(item) {
+            historyData.unshift(item);
+            if (historyData.length > 30) historyData.pop();
+            localStorage.setItem('homework_history', JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function loadFromHistory(item) {
+            homeworkInput.value = item.query;
+            homeworkInput.dispatchEvent(new Event('input'));
+            subjectSelect.value = item.subject || 'عام شامل';
+            modeSelect.value = item.mode || 'شرح تفصيلي خطوة بخطوة';
+
+            currentSolutionTextRaw = item.solution;
+            solutionText.innerHTML = marked.parse(item.solution);
+
+            metaSubject.textContent = `المادة: ${item.subject || 'عام'}`;
+            metaMode.textContent = item.mode || '';
+            metaTime.textContent = item.date;
+
+            placeholderState.classList.add('hidden');
+            loadingState.classList.add('hidden');
+            printableArea.classList.remove('hidden');
+            solutionActions.classList.remove('opacity-50', 'pointer-events-none');
+
+            showToast('تم تحميل الحل من السجل', 'info');
+        }
+
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('هل أنت تأكد من رغبتك في مسح كل السجل؟')) {
+                historyData = [];
+                localStorage.removeItem('homework_history');
+                renderHistory();
+                showToast('تم مسح السجل بنجاح', 'info');
+            }
+        });
+
+        // Drawer Animations
+        function openHistoryDrawer() {
+            historyDrawer.classList.remove('opacity-0', 'pointer-events-none');
+            historyPanel.classList.remove('translate-x-full');
+        }
+
+        function closeHistoryDrawer() {
+            historyPanel.classList.add('translate-x-full');
+            setTimeout(() => {
+                historyDrawer.classList.add('opacity-0', 'pointer-events-none');
+            }, 300);
+        }
+
+        toggleHistoryBtn.addEventListener('click', openHistoryDrawer);
+        closeHistoryBtn.addEventListener('click', closeHistoryDrawer);
+        historyDrawer.addEventListener('click', (e) => {
+            if (e.target === historyDrawer) closeHistoryDrawer();
+        });
+
+        // Initial Setup
+        renderHistory();
+    </script>
+</body>
+</html>
